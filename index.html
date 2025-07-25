@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login & Signup with Token System</title>
+    <!-- AdSense Script -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2564774910538433"
+        crossorigin="anonymous"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -60,6 +63,9 @@
         #token-count, #trial-end {
             font-weight: bold;
         }
+        .adsbygoogle {
+            margin: 10px auto;
+        }
     </style>
 </head>
 <body>
@@ -89,6 +95,12 @@
         <h2 id="welcome-message"></h2>
         <p>Tokens: <span id="token-count">0</span></p>
         <p>Trial End: <span id="trial-end">None</span></p>
+        <!-- AdSense Ad Unit -->
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-2564774910538433"
+             data-ad-slot="YOUR_AD_SLOT_ID"
+             data-ad-format="auto"></ins>
         <button onclick="viewAd()">View Ad (Earn 10 Tokens)</button>
         <button onclick="withdrawTokens()">Withdraw 100 Tokens for 1 Trial Day</button>
         <button onclick="logout()">Logout</button>
@@ -117,6 +129,9 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+
+        // Initialize AdSense
+        (adsbygoogle = window.adsbygoogle || []).push({});
 
         // Show specific page
         window.showPage = function(pageId) {
@@ -203,10 +218,13 @@
                 return;
             }
             try {
+                // Simulate ad view (replace with actual AdSense event if available)
                 await updateDoc(doc(db, 'users', user.uid), {
                     tokens: increment(10)
                 });
                 alert('Ad viewed! You earned 10 tokens.');
+                // Refresh ad (optional)
+                (adsbygoogle = window.adsbygoogle || []).push({});
             } catch (error) {
                 document.getElementById('login-error').textContent = error.message;
             }
