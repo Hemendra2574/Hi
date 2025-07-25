@@ -80,9 +80,9 @@
         <h2>Login</h2>
         <input type="email" id="login-email" placeholder="Gmail" required>
         <input type="password" id="login-password" placeholder="Password" required>
-        <button onclick="login()">Login</button>
+        <button id="login-button">Login</button>
         <p id="login-error" class="error"></p>
-        <p class="toggle" onclick="showPage('signup-page')">Don't have an account? Sign Up</p>
+        <p class="toggle" id="to-signup">Don't have an account? Sign Up</p>
     </div>
 
     <!-- Signup Page -->
@@ -91,9 +91,9 @@
         <input type="text" id="signup-username" placeholder="Username" required>
         <input type="email" id="signup-email" placeholder="Gmail" required>
         <input type="password" id="signup-password" placeholder="Password" required>
-        <button onclick="signup()">Sign Up</button>
+        <button id="signup-button">Sign Up</button>
         <p id="signup-error" class="error"></p>
-        <p class="toggle" onclick="showPage('login-page')">Already have an account? Login</p>
+        <p class="toggle" id="to-login">Already have an account? Login</p>
     </div>
 
     <!-- Home Page -->
@@ -110,7 +110,7 @@
                  data-ad-slot="2732812763"
                  data-ad-format="auto"
                  data-full-width-responsive="true"></ins>
-            <button onclick="viewAd('2732812763')">View Ad 1 (Earn 10 Tokens)</button>
+            <button onclick="window.viewAd('2732812763')">View Ad 1 (Earn 10 Tokens)</button>
         </div>
         <div class="ad-container">
             <p>Ad 2</p>
@@ -120,7 +120,7 @@
                  data-ad-layout-key="-fb+5w+4e-db+86"
                  data-ad-client="ca-pub-2564774910538433"
                  data-ad-slot="1228159400"></ins>
-            <button onclick="viewAd('1228159400')">View Ad 2 (Earn 10 Tokens)</button>
+            <button onclick="window.viewAd('1228159400')">View Ad 2 (Earn 10 Tokens)</button>
         </div>
         <div class="ad-container">
             <p>Ad 3</p>
@@ -129,8 +129,7 @@
                  data-ad-format="autorelaxed"
                  data-ad-client="ca-pub-2564774910538433"
                  data-ad-slot="3195847191"></ins>
-                
-            <button onclick="viewAd('3195847191')">View Ad 3 (Earn 10 Tokens)</button>
+            <button onclick="window.viewAd('3195847191')">View Ad 3 (Earn 10 Tokens)</button>
         </div>
         <div class="ad-container">
             <p>Ad 4</p>
@@ -139,21 +138,20 @@
                  data-ad-format="autorelaxed"
                  data-ad-client="ca-pub-2564774910538433"
                  data-ad-slot="3171796463"></ins>
-                
-            <button onclick="viewAd('3171796463')">View Ad 4 (Earn 10 Tokens)</button>
+            <button onclick="window.viewAd('3171796463')">View Ad 4 (Earn 10 Tokens)</button>
         </div>
-        <button onclick="withdrawTokens()">Withdraw 100 Tokens for 1 Trial Day</button>
-        <button onclick="logout()">Logout"></button>
+        <button id="withdraw-button">Withdraw 100 Tokens for 1 Trial Day</button>
+        <button id="logout-button">Logout</button>
     </div>
 
     <!-- Firebase SDK -->
     <script type="module">
         // Import Firebase modules
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.js/firebase-app.js';
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from 'https://www.gstatic.com/firebasejs/10.14.js/firebase-auth.js';
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.14.js/firebase-firestore.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-        // Your Firebase configuration (Use same as admin.html)
+        // Your Firebase configuration (Replace with actual values)
         const firebaseConfig = {
   apiKey: "AIzaSyDnqnb2mtQGCrFbd7vMaJqqCDrT-4fCnN4",
   authDomain: "admid-5e6b8.firebaseapp.com",
@@ -166,31 +164,55 @@
 };
 
         // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        let app, auth, db;
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            console.log('Firebase initialized:', app.name);
+        } catch (error) {
+            console.error('Firebase initialization failed:', error);
+            document.getElementById('login-error').textContent = 'Failed to initialize app. Check configuration.';
+            throw error;
+        }
 
         // Initialize AdSense
-        (adsbygoogle = window.adsbygoogle || []).push({});
+        try {
+            (adsbygoogle = window.adsbygoogle || []).push({});
+            console.log('AdSense initialized');
+        } catch (error) {
+            console.error('AdSense initialization failed:', error);
+        }
 
         // Show specific page
         window.showPage = function(pageId) {
             document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-            document.getElementById(pageId).classList.add('active');
-        }
+            const pageElement = document.getElementById(pageId);
+            if (pageElement) {
+                pageElement.classList.add('active');
+                console.log(`Switched to page: ${pageId}`);
+            } else {
+                console.error(`Page not found: ${pageId}`);
+            }
+        };
 
         // Signup function
         window.signup = async function() {
-            const username = document.getElementById('signup-username').value;
-            const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
+            const username = document.getElementById('signup-username')?.value.trim();
+            const email = document.getElementById('signup-email')?.value.trim();
+            const password = document.getElementById('signup-password')?.value.trim();
             const errorElement = document.getElementById('signup-error');
+
+            if (!username || !email || !password) {
+                errorElement.textContent = 'Please fill in all fields';
+                console.log('Empty signup fields');
+                return;
+            }
 
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
                 await updateProfile(user, { displayName: username });
-                // Initialize user data in Firestore
                 await setDoc(doc(db, 'users', user.uid), {
                     username: username,
                     email: email,
@@ -199,40 +221,86 @@
                     trialStart: null,
                     trialEnd: null
                 });
-                showPage('home-page');
+                console.log('Signup successful for:', email);
+                window.showPage('home-page');
             } catch (error) {
-                errorElement.textContent = error.message;
+                let message;
+                switch (error.code) {
+                    case 'auth/email-already-in-use':
+                        message = 'Email is already registered';
+                        break;
+                    case 'auth/invalid-email':
+                        message = 'Invalid email format';
+                        break;
+                    case 'auth/weak-password':
+                        message = 'Password must be at least 6 characters';
+                        break;
+                    default:
+                        message = error.message;
+                }
+                errorElement.textContent = `Signup failed: ${message}`;
+                console.error('Signup error:', error);
             }
-        }
+        };
 
         // Login function
         window.login = async function() {
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
+            const email = document.getElementById('login-email')?.value.trim();
+            const password = document.getElementById('login-password')?.value.trim();
             const errorElement = document.getElementById('login-error');
+
+            if (!email || !password) {
+                errorElement.textContent = 'Please fill in email and password';
+                console.log('Empty email or password');
+                return;
+            }
 
             try {
                 await signInWithEmailAndPassword(auth, email, password);
-                showPage('home-page');
+                console.log('Login successful for:', email);
+                window.showPage('home-page');
             } catch (error) {
-                errorElement.textContent = error.message;
+                let message;
+                switch (error.code) {
+                    case 'auth/wrong-password':
+                        message = 'Incorrect password';
+                        break;
+                    case 'auth/user-not-found':
+                        message = 'No user found with this email';
+                        break;
+                    case 'auth/invalid-email':
+                        message = 'Invalid email format';
+                        break;
+                    default:
+                        message = error.message;
+                }
+                errorElement.textContent = `Login failed: ${message}`;
+                console.error('Login error:', error);
             }
-        }
+        };
 
         // Logout function
         window.logout = async function() {
-            await signOut(auth);
-            showPage('login-page');
-        }
+            try {
+                await signOut(auth);
+                console.log('Logout successful');
+                window.showPage('login-page');
+            } catch (error) {
+                document.getElementById('login-error').textContent = `Logout failed: ${error.message}`;
+                console.error('Logout error:', error);
+            }
+        };
 
         // Auth state listener
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                showPage('home-page');
+                console.log('User is logged in:', user.email);
+                window.showPage('home-page');
                 document.getElementById('welcome-message').textContent = `Welcome, ${user.displayName || 'User'}!`;
                 loadUserData(user.uid);
             } else {
-                showPage('login-page');
+                console.log('No user is logged in');
+                window.showPage('login-page');
                 document.getElementById('token-count').textContent = '0';
                 document.getElementById('trial-end').textContent = 'None';
             }
@@ -246,99 +314,141 @@
                     const data = doc.data();
                     document.getElementById('token-count').textContent = data.tokens || 0;
                     document.getElementById('trial-end').textContent = data.trialEnd ? new Date(data.trialEnd).toLocaleDateString() : 'None';
+                    console.log('User data loaded:', data);
+                } else {
+                    console.error('User document not found for UID:', uid);
+                    document.getElementById('login-error').textContent = 'User data not found';
                 }
+            }, (error) => {
+                console.error('Error loading user data:', error);
+                document.getElementById('login-error').textContent = 'Error loading user data';
             });
         }
 
         // Track ad views to prevent abuse
-        const adViewTimestamps = new Map(); // Store last view time per ad slot per user
+        const adViewTimestamps = new Map();
         const AD_VIEW_COOLDOWN = 60 * 1000; // 1 minute cooldown per ad
-        const DAILY_AD_LIMIT = 5; // Max 5 ad views per day per ad slot
+        const HOURLY_RESET_INTERVAL = 60 * 60 * 1000; // 1 hour in milliseconds
+        const HOURLY_AD_LIMIT = 5; // Max 5 ad views per hour per ad slot
+
+        // Cleanup outdated ad view data
+        function cleanupAdViews() {
+            const now = Date.now();
+            for (const [userAdKey, adViews] of adViewTimestamps) {
+                if (now - adViews.firstView >= HOURLY_RESET_INTERVAL) {
+                    adViewTimestamps.delete(userAdKey);
+                    console.log(`Reset ad view data for ${userAdKey}`);
+                }
+            }
+        }
 
         // View Ad function
         window.viewAd = async function(adSlot) {
             const user = auth.currentUser;
             if (!user) {
                 document.getElementById('login-error').textContent = 'Please sign in to earn tokens.';
+                console.log('Ad view attempted without login');
                 return;
             }
             try {
+                cleanupAdViews(); // Clean up outdated ad views
                 const now = Date.now();
                 const userAdKey = `${user.uid}_${adSlot}`;
-                const adViews = adViewTimestamps.get(userAdKey) || { count: 0, lastView: 0, date: new Date().toDateString() };
+                let adViews = adViewTimestamps.get(userAdKey) || { count: 0, lastView: 0, firstView: now };
 
-                // Reset daily count if new day
-                if (adViews.date !== new Date().toDateString()) {
-                    adViews.count = 0;
-                    adViews.date = new Date().toDateString();
+                if (!adViews.firstView) {
+                    adViews.firstView = now;
                 }
 
-                // Check cooldown and daily limit
                 if (now - adViews.lastView < AD_VIEW_COOLDOWN) {
                     document.getElementById('login-error').textContent = 'Please wait a minute before viewing this ad again.';
+                    console.log('Ad view blocked: cooldown active');
                     return;
                 }
-                if (adViews.count >= DAILY_AD_LIMIT) {
-                    document.getElementById('login-error').textContent = `You have reached the daily limit of ${DAILY_AD_LIMIT} views for this ad.`;
+                if (adViews.count >= HOURLY_AD_LIMIT) {
+                    document.getElementById('login-error').textContent = `You have reached the hourly limit of ${HOURLY_AD_LIMIT} views for this ad. Try again in ${Math.ceil((HOURLY_RESET_INTERVAL - (now - adViews.firstView)) / 60000)} minutes.`;
+                    console.log('Ad view blocked: hourly limit reached');
                     return;
                 }
 
-                // Update ad view tracking
                 adViews.count += 1;
                 adViews.lastView = now;
                 adViewTimestamps.set(userAdKey, adViews);
 
-                // Award tokens
                 await updateDoc(doc(db, 'users', user.uid), {
                     tokens: increment(10)
                 });
                 alert(`Ad ${adSlot} viewed! You earned 10 tokens.`);
-                // Refresh ad (optional)
-                (adsbygoogle = window.adsbygoogle || []).push({});
+                console.log(`Ad ${adSlot} viewed by ${user.email}, tokens incremented`);
+                try {
+                    (adsbygoogle = window.adsbygoogle || []).push({});
+                    console.log(`Ad ${adSlot} refreshed`);
+                } catch (error) {
+                    console.error('AdSense refresh failed:', error);
+                }
             } catch (error) {
-                document.getElementById('login-error').textContent = error.message;
+                document.getElementById('login-error').textContent = `Ad view failed: ${error.message}`;
+                console.error('Ad view error:', error);
             }
-        }
+        };
 
         // Withdraw Tokens for Trial Days
         window.withdrawTokens = async function() {
             const user = auth.currentUser;
             if (!user) {
                 document.getElementById('login-error').textContent = 'Please sign in to withdraw tokens.';
+                console.log('Withdraw attempted without login');
                 return;
             }
             try {
                 const userDoc = doc(db, 'users', user.uid);
                 const docSnap = await getDoc(userDoc);
+                if (!docSnap.exists()) {
+                    document.getElementById('login-error').textContent = 'User data not found';
+                    console.error('User document not found for UID:', user.uid);
+                    return;
+                }
                 const data = docSnap.data();
                 if (data.tokens >= 100) {
                     let updates = { tokens: increment(-100) };
                     const now = new Date();
                     if (!data.trialEnd || new Date(data.trialEnd) < now) {
-                        // No active trial or trial expired, start new trial
                         const trialStart = now;
                         const trialEnd = new Date(trialStart);
                         trialEnd.setDate(trialStart.getDate() + 1);
                         updates.trialStart = trialStart.toISOString();
                         updates.trialEnd = trialEnd.toISOString();
                     } else {
-                        // Extend existing trial
                         const trialEnd = new Date(data.trialEnd);
                         trialEnd.setDate(trialEnd.getDate() + 1);
                         updates.trialEnd = trialEnd.toISOString();
                     }
                     await updateDoc(userDoc, updates);
                     alert('Successfully withdrawn 100 tokens for 1 trial day!');
+                    console.log(`Withdrawn 100 tokens for ${user.email}, trial extended`);
                 } else {
                     document.getElementById('login-error').textContent = 'Insufficient tokens. Need 100 tokens to withdraw.';
+                    console.log('Insufficient tokens for withdrawal:', data.tokens);
                 }
             } catch (error) {
-                document.getElementById('login-error').textContent = error.message;
+                document.getElementById('login-error').textContent = `Withdraw failed: ${error.message}`;
+                console.error('Withdraw error:', error);
             }
-        }
+        };
 
-        // Firestore increment helper
-        import { increment } from 'https://www.gstatic.com/firebasejs/10.14.js/firebase-firestore.js';
+        // Add event listeners to buttons
+        try {
+            document.getElementById('login-button').addEventListener('click', window.login);
+            document.getElementById('signup-button').addEventListener('click', window.signup);
+            document.getElementById('to-signup').addEventListener('click', () => window.showPage('signup-page'));
+            document.getElementById('to-login').addEventListener('click', () => window.showPage('login-page'));
+            document.getElementById('withdraw-button').addEventListener('click', window.withdrawTokens);
+            document.getElementById('logout-button').addEventListener('click', window.logout);
+            console.log('Event listeners added successfully');
+        } catch (error) {
+            console.error('Failed to add event listeners:', error);
+            document.getElementById('login-error').textContent = 'Failed to initialize event listeners';
+        }
     </script>
 </body>
 </html>
